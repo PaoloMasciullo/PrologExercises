@@ -1,10 +1,10 @@
-% owns(child(Var1), dog(Var2)) says that Var 1 is a child, Var 2 is a dog, and Var 1 is the owner of Var2
+% owns(child(Var1), dog(Var2)) says that Var1 is a child, Var2 is a dog, and Var 1 is the owner of Var2
 owns(child(alice), dog(rococò)).
 owns(child(barbara), dog(sibilo)).
 owns(child(carla), dog(tocco)).
 owns(child(daria), dog(uguccione)).
 
-% dog(dog(Var1), child(Var2)) says that Var2 is a child and Var 1 is the dog of Var1
+% dog(dog(Var1), child(Var2)) says that Var2 is a child and Var1 is the dog of Var2
 dog_of(dog(rococò), child(alice)).
 dog_of(dog(sibilo), child(barbara)).
 dog_of(dog(tocco), child(carla)).
