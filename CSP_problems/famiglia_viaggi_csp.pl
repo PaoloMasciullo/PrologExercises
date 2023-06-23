@@ -40,22 +40,32 @@ domain(madre, [parigi, montecarlo, berlino, roma, varsavia]).
 domain(figlio, [rosamaria, mykonos, roma, sardegna, barcellona]).
 domain(figlia, [londra, dublino, newyork, mykonos, parigi]).
 
-destination_cost(barcellona, 1000).
-destination_cost(hongkong, 2000).
-destination_cost(roma, 500).
-destination_cost(bali, 1500).
-destination_cost(londra, 1000).
-destination_cost(parigi, 1000).
-destination_cost(montecarlo, 1500).
-destination_cost(berlino, 800).
-destination_cost(varsavia, 500).
-destination_cost(rosamaria, 1000).
-destination_cost(mykonos, 2000).
-destination_cost(sardegna, 1500).
-destination_cost(dublino, 1000).
-destination_cost(newyork, 2000).
+costs([barcellona/1000, hongkong/2000, roma/500, bali/1500, londra/1000,
+       parigi/1000, montecarlo/1500, berlino/800, varsavia/500, rosamaria/1000,
+       mykonos/2000, sardegna/1500, dublino/1000, newyork/2000]).
+
+cost(Val, Cost):-
+    costs(Costs),
+    find_cost(Val, Costs, Cost).
+
+find_cost(Val, [Val/Cost|_], Cost):-!.
+find_cost(Val, [_|T], Cost):-
+    find_cost(Val, T, Cost).
 
 template([padre/_, madre/_, figlio/_, figlia/_]).
+
+member2(El, [El|_]).
+member2(El, [_|T]):-
+    member2(El, T).
+
+length2([], 0).
+length2([_|T], Length):-
+    length2(T, Tmp),
+    Length is Tmp + 1.
+
+var_in_state(Var, [Var/Val|_], Val):-!.
+var_in_state(Var, [_|T], Val):-
+    var_in_state(Var, T, Val).
 
 search([]).
 search([H|Other]):-
@@ -63,72 +73,57 @@ search([H|Other]):-
     H = Var/Val,
     domain(Var, Domain),
     member2(Val, Domain),
-    global_constraint(Var/Val, Other).
+    global_constraint([Var/Val|Other]).
 
-csp(Solution, TotalSatisfaction, TotalCost):-
+csp(Solution, TotalCost, TotalSatIdx):-
     template(Solution),
     search(Solution),
-    total_sat_idx(Solution, TotalSatisfaction),
-    total_cost(Solution, TotalCost).
-
-member2(El, [El|_]).
-member2(El, [_|T]):-
-    member2(El, T).
-
-number_var_assigned([], 0).
-number_var_assigned([_|T], Count):-
-    number_var_assigned(T, CountTail),
-    Count is CountTail + 1.
-
-sum_costs([], 0).
-sum_costs([_/Dest|T], Sum):-
-    sum_costs(T, SumTail),
-    destination_cost(Dest, Cost),
-    Sum is SumTail + Cost.
+    total_cost(Solution, TotalCost),
+    total_sat_idx(Solution, TotalSatIdx).
 
 % spesa totale sia inferiore ai 2500 euro
-total_cost(State, TotalCost):-
-    number_var_assigned(State, 4),
-    !,
-    sum_costs(State, TotalCost).
-total_cost(_, _).
+total_cost([], 0).
+total_cost([_/Val|T], TotalCost):-
+    total_cost(T, Tmp),
+    cost(Val, Cost),
+    TotalCost is Tmp + Cost.
 
-% L'indice di soddisfazione finale della famiglia NON deve essere inferiore a 10 punti su 20 totali.
-satisfaction_index(Destination, [Destination|_], 5):- !.
-satisfaction_index(Destination, [_|T], Satisfaction):-
-    satisfaction_index(Destination, T, Satisfaction2),
-    Satisfaction is Satisfaction2 - 1.
+%esattamente due elementi della famiglia viaggino insieme
+list_to_set([], []).
+list_to_set([_/Val|T], Set):-
+    var_in_state(_, T, Val),
+    !,
+    list_to_set(T, Set).
+list_to_set([Var/Val|T], [Var/Val|Ts]):-
+    list_to_set(T, Ts).
+
+two_el_together(State):-
+    list_to_set(State, Set),
+    length2(State, L1),
+    length2(Set, L2),
+    L2 is L1 - 1.
+
+% L'indice di soddisfazione finale della famiglia NON deve essere inferiore a 10 punti
+sat_idx(Val, [Val|_], 5):-!.
+sat_idx(Val, [_|T], SatIdx):-
+    sat_idx(Val, T, Tmp),
+    SatIdx is Tmp - 1.
 
 total_sat_idx([], 0).
-total_sat_idx([Var/Dest|T], TotSat):-
-    total_sat_idx(T, TotSat2),
+total_sat_idx([Var/Val|T], TotSat):-
+    total_sat_idx(T, Tmp),
     domain(Var, Domain),
-    satisfaction_index(Dest, Domain, Sat),
-    TotSat is TotSat2 + Sat.
+    sat_idx(Val, Domain, SatIdx),
+    TotSat is Tmp + SatIdx.
 
-tot_sat_constraint(State, Limit):-
-    number_var_assigned(State, 4),
-    !,
-    total_sat_idx(State, TotSat),
-    TotSat >= Limit.
-tot_sat_constraint(_, _).
+sat_constraint(State):-
+    total_sat_idx(State, TotalSat),
+    TotalSat >= 10.
 
-% esattamente due elementi della famiglia viaggino insieme
-count_dest(Destination, [_/Destination|T], Count):-
-    count_dest(Destination, T, Count2),
+global_constraint(State):-
+    length2(State, 4),
     !,
-    Count is Count2 + 1.
-count_dest(Destination, [_/_|T], Count):-
-    count_dest(Destination, T, Count).   
-count_dest(_, [], 0).
-                  
-two_dest_equal([Var/Val|State]):-
-    number_var_assigned([Var/Val|State], 4),
-    !,
-    count_dest(Val, State, 1).                  
-two_dest_equal(_).                  
-
-global_constraint(Var/Val, State):-
-    total_cost([Var/Val|State], 2500),
-    tot_sat_constraint([Var/Val|State], 10),
-    two_dest_equal([Var/Val|State]).
+    total_cost(State, 2500),
+    two_el_together(State),
+    sat_constraint(State).
+global_constraint(_).
