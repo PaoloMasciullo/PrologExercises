@@ -89,26 +89,37 @@ total_cost([S/W|T], TotalCost):-
     cost(S, W, Cost),
     TotalCost is Tmp + Cost.
 
-global_constraint(State):-
-    length2(State, 4),
-    !,
-    total_cost(State, 12).
-global_constraint(_).
 % Store 2 and 3 can't be supplied by the same warehouse
 different_values(W1, S2, State):-
     var_in_state(S2, State, W2),
     !,
     W1 \= W2.
 different_values(_, _, _).
-    
+
 % Store 1 must be supplied by a warehouse which supplies at least one other store
-supply_a_store(W, State):-
-    var_in_state(_, State, W).
-        
-variable_constraint(s2/Val, State):-
+n_stores_supplied(_, [], 0).
+n_stores_supplied(W, [_/W|T], Count):-
     !,
-    different_values(Val, s3, State).
-variable_constraint(s1/Val, State):-
+    n_stores_supplied(W, T, Tmp),
+    Count is Tmp + 1.
+n_stores_supplied(W, [_|T], Count):-
+    n_stores_supplied(W, T, Count).
+
+s1_constraint(State, N):-
+    var_in_state(s1, State, W),
+    n_stores_supplied(W, State, Count),
+    Count > N.
+
+% assign global constraints
+global_constraint(State):-
+    length2(State, 4),
     !,
-    supply_a_store(Val, State).
+    total_cost(State, 12),
+    s1_constraint(State, 1).
+global_constraint(_).
+
+% assign variable constraints
+variable_constraint(s2/W, State):-
+    !,
+    different_values(W, s3, State).
 variable_constraint(_/_, _).
