@@ -33,13 +33,15 @@ member(El, [_|T]):-
     member(El,T).
 
 % remove_duplicates/2 rimuove i duplicati dalla lista
-remove_duplicates([], _).  % caso di una lista vuota
+remove_duplicates([], []).  % caso di una lista vuota
 
-remove_duplicates([H|T], [H, _]):-
-    not(member(H, T)).
+remove_duplicates([H|T], [H|Tx]):-
+    not(member(H, T)),
+    !,
+    remove_duplicates(T, Tx).
 
-remove_duplicates([H|T], T):-
-    member(H, T).
+remove_duplicates([_|T], L):-
+    remove_duplicates(T, L).
 
 prd(L2, N, L1):-
     prefix(L2, N, Temp),

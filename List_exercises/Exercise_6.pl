@@ -6,30 +6,24 @@
 intersection([Ha|Ta], B, [Ha|Tc]):-  % elemento selezionato di A è anche in B
     member2(Ha, B), !,
     intersection(Ta, B, Tc).
-
 intersection([_|Ta], B, C):-
     intersection(Ta, B, C).
-
 intersection([], _, []).
 
 member2(El, [El|_]):- !.
-
 member2(El, [_|T]):-
     member2(El, T).
 
 subtraction([Ha|Ta], B, C):-
-    member(Ha, B), !,
+    member2(Ha, B), !,
     subtraction(Ta, B, C).
-
 subtraction([Ha|Ta], B, [Ha|Tc]):-
     subtraction(Ta, B, Tc).
-
 subtraction([], _, []).
 
 prd(A, B, C, D):-
     intersection(A, B, C),
     subtraction(A, B, D).
-
 
 /* 
  * Query:
